@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "birthdaybot"
+name = "discordbottemplate"
 version = "0.1.0"
-description = "A discord bot for birthdays."
+description = "A discord bot template."
 authors = ["anress <anjress@gmail.com>"]
 readme = "README.md"
 

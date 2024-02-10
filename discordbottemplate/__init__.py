@@ -5,7 +5,7 @@ from pathlib import Path
 from peewee import SqliteDatabase
 
 # database is created in parent directory of this file
-BOT_DB = SqliteDatabase(Path(__file__).parent.parent / 'birthdaybot.db')
+BOT_DB = SqliteDatabase(Path(__file__).parent.parent / 'discordbot.db')
 
 try:
     with (Path(__file__).parent.parent / 'token.json').open() as tf:
