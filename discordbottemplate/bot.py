@@ -3,6 +3,7 @@ import logging
 
 from discord.ext import commands
 from pathlib import Path
+import traceback
 
 from .models import Guild
 
@@ -41,10 +42,24 @@ async def hello_command(interaction: discord.Interaction):
 
 @client.tree.command(
     name="set_channel",
-    description="asdf",
+    description="Set the current channel as default channel for the bot to post updates in.",
 )
 async def set_channel(interaction: discord.Interaction):
-    await interaction.response.send_message("WIP", ephemeral=True)
+    try:
+            await interaction.response.defer(thinking=True, ephemeral=True)
+            guild = Guild.get(Guild.guild_id == interaction.guild.id)
+            guild.channel_id = interaction.channel_id
+            guild.save()
+            channelName = interaction.channel.name
+            await interaction.edit_original_response(
+                content=f"Set the default channel to `{channelName}`!"
+            )
+    except:
+            await interaction.edit_original_response(
+                content="An error occurred while trying to set the default channel."
+            )
+            logging.error(f"Could not set the default channel.")
+            traceback.print_exc()
 
 
 @client.tree.command(
