@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "birthdaybot"
+version = "0.1.0"
+description = "A discord bot for birthdays."
+authors = ["anress <anjress@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+discord = "^2.3.2"
+peewee = "^3.17.1"
+
+
+[tool.poetry.group.dev.dependencies]
+ipython = "^8.21.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
