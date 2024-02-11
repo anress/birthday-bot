@@ -25,7 +25,7 @@ class DiscordBotClient(discord.Client):
 
         client_guilds = [guild async for guild in self.fetch_guilds(limit=None)]
         for guild in client_guilds:
-            if not (Guild.get(Guild.guild_id == guild.id)):
+            if Guild.get_or_none(Guild.guild_id == guild.id) is None:
                 Guild.create(guild_id=guild.id)
 
         client_guild_ids = [guild.id for guild in client_guilds]
