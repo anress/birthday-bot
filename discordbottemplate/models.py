@@ -1,6 +1,9 @@
 import peewee as pw
 
-from discordbottemplate import BOT_DB
+from pathlib import Path
+
+# database is created in parent directory of this file
+BOT_DB = pw.SqliteDatabase(Path(__file__).parent.parent / 'discordbot.db')
 
 class Guild(pw.Model):
     guild_id = pw.IntegerField(null=False, unique=True)
@@ -12,7 +15,5 @@ class Guild(pw.Model):
 
     class Meta:
         database = BOT_DB
-
-
 
 BOT_DB.create_tables([Guild])

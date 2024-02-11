@@ -1,4 +1,3 @@
-from discordbottemplate import BOT_TOKEN
-from discordbottemplate.bot import client
+from discordbottemplate import BOT_TOKEN, client
 
 client.run(BOT_TOKEN)
