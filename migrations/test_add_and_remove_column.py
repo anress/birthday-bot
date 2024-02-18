@@ -7,7 +7,7 @@ Make sure to make the corresponding changes in the respective `models.py` file.
 import peewee as pw
 
 from playhouse.migrate import SqliteMigrator, migrate
-from discordbottemplate import BOT_DB
+from birthdaybot import BOT_DB
 
 migrator = SqliteMigrator(BOT_DB)
 

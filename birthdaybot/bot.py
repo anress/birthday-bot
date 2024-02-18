@@ -2,6 +2,7 @@ import discord
 import logging
 
 from discord import app_commands
+from discord.ext.commands import has_permissions
 
 from .models import Guild
 
@@ -15,7 +16,7 @@ ADMIN_GUILDS = [
     if guild.is_admin_guild
 ]
 
-class DiscordBotClient(discord.Client):
+class BirthdayBotClient(discord.Client):
     def __init__(self, *, intents: discord.Intents):
         super().__init__(intents=intents)
         self.tree = discord.app_commands.CommandTree(self)
@@ -36,11 +37,11 @@ class DiscordBotClient(discord.Client):
         logging.info(f"Finished database cleanup.")
              
         for admin_guild in ADMIN_GUILDS:
-            await self.tree.sync(guild=admin_guild)
             self.tree.copy_global_to(guild=admin_guild)
+            await self.tree.sync(guild=admin_guild)
             logging.info(f"Synchronized command tree with commands {[cmd.name for cmd in self.tree.get_commands(guild=admin_guild)]} to admin servers.")
 
-client = DiscordBotClient(intents=intents)
+client = BirthdayBotClient(intents=intents)
 
 @client.event
 async def on_guild_join(guild: discord.Guild):
@@ -64,6 +65,7 @@ if ADMIN_GUILDS:
         logging.info(f"Synchronized command tree with global commands {[cmd.name for cmd in client.tree.get_commands()]}.")
         await interaction.response.send_message("Global commands syncronized successfully.", ephemeral=True)
 
+@has_permissions(administrator=True)
 @client.tree.command(
     name="set_channel",
     description="Set the default channel for the bot to post updates in.",
