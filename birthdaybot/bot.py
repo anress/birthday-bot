@@ -6,6 +6,8 @@ from discord.ext.commands import has_permissions
 
 from .models import Guild
 
+from .tasks.scheduler import Scheduler
+
 
 discord.utils.setup_logging()
 intents = discord.Intents.default()
@@ -20,6 +22,10 @@ class BirthdayBotClient(discord.Client):
     def __init__(self, *, intents: discord.Intents):
         super().__init__(intents=intents)
         self.tree = discord.app_commands.CommandTree(self)
+
+    async def on_disconnect(self):
+        for task in self.task_containers:
+            task.cog_unload()
 
     async def setup_hook(self):
         logging.info(f"Logged in as {self.user.name}")
@@ -40,6 +46,10 @@ class BirthdayBotClient(discord.Client):
             self.tree.copy_global_to(guild=admin_guild)
             await self.tree.sync(guild=admin_guild)
             logging.info(f"Synchronized command tree with commands {[cmd.name for cmd in self.tree.get_commands(guild=admin_guild)]} to admin servers.")
+
+        self.task_containers = [
+            Scheduler(self),
+        ]
 
 client = BirthdayBotClient(intents=intents)
 

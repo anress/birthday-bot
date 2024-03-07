@@ -17,10 +17,16 @@ class Guild(pw.Model):
         database = BOT_DB
 
 class Birthday(pw.Model):
-    guild_id = pw.IntegerField(null=False, unique=True)
+    guild_id = pw.IntegerField(null=False)
     user_id = pw.IntegerField(null=False)
     date = pw.DateField(null=False)
 
+    class Meta:
+        indexes = (
+            # create a unique on from/to/date
+            (('guild_id', 'user_id'), True),
+        )
+        
     def __repr__(self) -> str:
         return f"<Birthday: {self.get_id()}, guild_id={self.guild_id}, user_id={self.user_id}, date={self.date}>"
 
@@ -28,14 +34,14 @@ class Birthday(pw.Model):
         database = BOT_DB
 
 class Event(pw.Model):
-    guild_id = pw.IntegerField(null=False, unique=True)
+    guild_id = pw.IntegerField(null=False)
     user_id = pw.IntegerField(null=False)
     date = pw.DateField(null=False)
     description = pw.TextField(null=False)
-    repeatAnnually = pw.BooleanField(default=False)
+    repeat_annually = pw.BooleanField(default=False)
 
     def __repr__(self) -> str:
-        return f"<Event: {self.get_id()}, guild_id={self.guild_id}, user_id={self.user_id}, date={self.date}, description={self.description} repeatAnnually={self.repeatAnnually}>"
+        return f"<Event: {self.get_id()}, guild_id={self.guild_id}, user_id={self.user_id}, date={self.date}, description={self.description} repeat_annually={self.repeat_annually}>"
 
     class Meta:
         database = BOT_DB        
