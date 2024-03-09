@@ -12,12 +12,12 @@ from birthdaybot.models import BOT_DB
 migrator = SqliteMigrator(BOT_DB)
 
 # ## remove column again
-# migrate(
-#     migrator.drop_index('birthday', 'birthday_guild_id')
-# )
-# migrate(
-#     migrator.drop_column('birthday', 'guild_id')
-# )
+migrate(
+    migrator.drop_index('birthday', 'birthday_user_id')
+)
+migrate(
+    migrator.drop_column('birthday', 'user_id')
+)
 
 
 ## add a new column belonging to a TextField to the guild table
@@ -26,9 +26,9 @@ userId = pw.IntegerField(default=0, unique=True)
 
 
 
-# migrate(
-#     migrator.add_column('event', 'user_id', guildId)
-# )
+migrate(
+    migrator.add_column('birthday', 'user_id', guildId)
+)
 
 
 # migrate(

@@ -38,6 +38,7 @@ class Event(pw.Model):
     user_id = pw.IntegerField(null=False)
     date = pw.DateField(null=False)
     description = pw.TextField(null=False)
+    image_url = pw.TextField(null=True)
     repeat_annually = pw.BooleanField(default=False)
 
     def __repr__(self) -> str:

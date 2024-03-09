@@ -8,13 +8,14 @@ from ..bot import client
 
 class EventModal(ui.Modal, title='Create new event'):
     description = ui.TextInput(label='Description of your event', style=discord.TextStyle.paragraph)
+    image_url = ui.TextInput(label='Add an iamge to the event post (optional)')
     async def on_submit(self, interaction: discord.Interaction):
-        global temp
-        temp = self.description
+       # global temp
+        # temp = self.description
         self.on_submit_interaction = interaction
         self.stop()
 
-        return self.description
+        # return [self.description, self.image_url]
 
 @client.tree.command(name="add-event", description="Add a custom event")
 @app_commands.describe(
@@ -31,6 +32,13 @@ async def add_event(
     repeat_annually: bool
 ):
     # await interaction.response.defer(thinking=True)
+    guild: Guild = Guild.get_or_none(Guild.guild_id == interaction.guild.id)
+    if guild.channel_id is None:
+        await interaction.edit_original_response(
+        content=f"Please contact a moderator to first set a channel with the `/set_channel` command."
+    )
+        return
+    
     modal = EventModal()
    
     await interaction.response.send_modal(modal)
@@ -38,6 +46,7 @@ async def add_event(
     response = await modal.wait() # Wait for the modal to respond
     print(response)
     print(modal.description)
+    print(modal.image_url)
     # Edit the message
 
     # Send the confirmation
@@ -45,9 +54,5 @@ async def add_event(
    
     Event.create(guild_id=interaction.guild.id, user_id= interaction.user.id, date=datetime.date(month=month, day=day, year=year), description=modal.description, repeat_annually=repeat_annually)
     
-    # guild: Guild = Guild.get_or_none(Guild.guild_id == interaction.guild.id)
-    # if guild.channel_id is None:
-    #     await interaction.edit_original_response(
-    #     content=f"You first must set a channel with the `/set_channel` command."
-    # )
+  
     
