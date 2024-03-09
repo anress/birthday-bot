@@ -37,6 +37,7 @@ class Event(pw.Model):
     guild_id = pw.IntegerField(null=False)
     user_id = pw.IntegerField(null=False)
     date = pw.DateField(null=False)
+    title = pw.TextField(null=False)
     description = pw.TextField(null=False)
     image_url = pw.TextField(null=True)
     repeat_annually = pw.BooleanField(default=False)

@@ -1,3 +1,5 @@
+MESSAGE_MAX_LEN = 2000
+
 BIRTHDAY_QUOTES = [
     "Happy Birthday from the most amazing person you know.",
     "You get better with time, like stinky cheese.",
