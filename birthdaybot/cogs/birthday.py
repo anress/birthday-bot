@@ -4,6 +4,7 @@ import datetime
 from discord import app_commands
 from ..models import Guild, Birthday
 from ..bot import client              
+from birthdaybot.helpers import send_long_message
 
 # admin command   
 # make the command only visible to admin (or restrict to certain roles): 
@@ -114,7 +115,7 @@ async def get_birthdays(interaction: discord.Interaction):
         for db_entry in Birthday.select().where(Birthday.guild_id == interaction.guild.id).order_by(Birthday.date):
             db_entry: Birthday
             birthday_string = birthday_string + f"**{db_entry.date.strftime('%B')} {db_entry.date.strftime('%d')} -  <@{db_entry.user_id}>** 🎈 \n"
-        await interaction.edit_original_response(content=birthday_string, allowed_mentions=discord.AllowedMentions(users=False))
+        await send_long_message(message=birthday_string, interaction=interaction)
 
 # admin command  
 @client.tree.command(name="upcoming-birthdays", description="Returns the three next upcoming birthdays.")

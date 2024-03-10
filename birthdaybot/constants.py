@@ -1,4 +1,5 @@
-MESSAGE_MAX_LEN = 2000
+# discord message max len - 6 characters for pre- and appending "..."
+MESSAGE_MAX_LEN = 1994
 
 BIRTHDAY_QUOTES = [
     "Happy Birthday from the most amazing person you know.",
