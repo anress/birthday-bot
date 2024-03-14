@@ -8,14 +8,11 @@ from discord import app_commands, ui
 from ..models import Guild, Event
 from ..bot import client
 from birthdaybot.constants import EMBED_COLORS
-from birthdaybot.helpers import date_formatter, send_long_message
-
-# dd/MM/yyyy
-DATE_REGEX = r"(^(((0[1-9]|1[0-9]|2[0-8])[\/](0[1-9]|1[012]))|((29|30|31)[\/](0[13578]|1[02]))|((29|30)[\/](0[4,6,9]|11)))[\/](19|[2-9][0-9])\d\d$)|(^29[\/]02[\/](19|[2-9][0-9])(00|04|08|12|16|20|24|28|32|36|40|44|48|52|56|60|64|68|72|76|80|84|88|92|96)$)"
+from birthdaybot.helpers import date_formatter, is_valid_date, is_valid_url, send_long_message, is_legitmate_date
 
 class AddEventModal(ui.Modal, title='Create new event'):
     event_title = ui.TextInput(label='Event title')
-    description = ui.TextInput(label='Description of your event', style=discord.TextStyle.paragraph)
+    description = ui.TextInput(label='Description of your event', style=discord.TextStyle.paragraph, placeholder="Supports default emojis and standard discord markdown")
     image_url = ui.TextInput(label='Add an image (optional)', required=False)
     async def on_submit(self, interaction: discord.Interaction):
         self.on_submit_interaction = interaction
@@ -23,8 +20,8 @@ class AddEventModal(ui.Modal, title='Create new event'):
 
 class EditEventModal(ui.Modal, title='Edit event'):
     event_title = ui.TextInput(label='Event title')
-    description = ui.TextInput(label='Description of your event', style=discord.TextStyle.paragraph)
-    date= ui.TextInput(label='Date (Strictly in the formtat dd/MM/yyyy)')
+    description = ui.TextInput(label='Description of your event', style=discord.TextStyle.paragraph, placeholder="Supports default emojis and standard discord markdown")
+    date= ui.TextInput(label='Date (Strictly in the formtat dd/MM/yyyy)', placeholder="dd/MM/yyyy")
     image_url = ui.TextInput(label='Add an image (optional)', required=False)  
     def __init__(self, original_event: Event):
             super().__init__()
@@ -37,7 +34,7 @@ class EditEventModal(ui.Modal, title='Edit event'):
         self.stop()
 
 
-@client.tree.command(name="add-event", description="Add a custom event")
+@client.tree.command(name="add event", description="Add a custom event")
 @app_commands.describe(
     day="Day the event takes place.",
     month="Month the event takes place.",
@@ -58,20 +55,36 @@ async def add_event(
     )
         return
     
+    if not is_legitmate_date(day=day, month=month, year=year, check_year=True):
+        await interaction.edit_original_response(
+        content=f"The date {day}/{month}/{year} does not exist. Please enter a valid date for your event!"
+    )  
+        return
+    
     modal = AddEventModal()
    
     await interaction.response.send_modal(modal)
 
     response = await modal.wait() # Wait for the modal to respond
   
-   
-    event = Event.create(guild_id=interaction.guild.id, user_id= interaction.user.id, date=datetime.date(month=month, day=day, year=year), repeat_annually=repeat_annually, title=modal.event_title, description=modal.description, image_url=modal.image_url)
+    if (not is_valid_url(modal.image_url.value)) & (len(modal.image_url.value) > 0):             
+        validation_response = f"⚠️ Your submitted image URL `{modal.image_url}` was not a well formed URL. Perhaps try another link? To check if an image will be renderd correctly, use the `/preview-event` command!\n"
+        image_url_str = (modal.image_url if (modal.image_url.value is not None) & (len(modal.image_url.value) > 0) else "-")
+        repeat_annually_str = (f'Yes ✅' if repeat_annually   else 'No :x:')
+
+        stored_values = (f"### ⚠️ Your changes were not saved to the database. However, so nothing gets lost I have your values right here for you:\n\n"
+        f"**Title:** {modal.event_title}\n**Description:** {modal.description}\n**Date:** {date_formatter(datetime.date(month=month, day=day, year=year))}\n**Repeat annually:** {repeat_annually_str}\n**Image URL:** {image_url_str}")
+                    
+        await modal.on_submit_interaction.response.send_message(validation_response, ephemeral=True)
+        await send_long_message(message=stored_values, interaction=interaction, already_responded=True)
+    else:
+        event = Event.create(guild_id=interaction.guild.id, user_id= interaction.user.id, date=datetime.date(month=month, day=day, year=year), repeat_annually=repeat_annually, title=modal.event_title, description=modal.description, image_url=modal.image_url)
     
     # Send the confirmation 
     await modal.on_submit_interaction.response.send_message(f"Successfully added your event! 💃 \nThe ID of your event is: `{event.id}`, in case you want to preview or edit it later.", ephemeral=True)
 
     
-@client.tree.command(name="edit-event", description="Edit one of your events.")
+@client.tree.command(name="edit event", description="Edit one of your events.")
 @app_commands.describe(
     event_id="ID of your event that you want to edit", 
     repeat_annually="Set whether this is a yearly reccurring event."
@@ -90,14 +103,23 @@ async def edit_event(
 
         response = await modal.wait() # Wait for the modal to respond
 
-        reg = re.compile(DATE_REGEX)
-        if reg.match(modal.date.value) is None:
+        has_error = False
+        validation_response = ""
+
+        if not is_valid_date(modal.date.value):
+            has_error = True
+            validation_response = f"⚠️ Your submitted date `{modal.date}` was not valid. Please enter your event's date strictly in the format `dd/MM/yyyy`!\n"
+        
+        if (not is_valid_url(modal.image_url.value)) & (len(modal.image_url.value) > 0):            
+            has_error = True
+            validation_response = f"⚠️ Your submitted image URL `{modal.image_url}` was not a well formed URL. Perhaps try another link? To check if an image will be renderd correctly, use the `/preview-event` command!!\n"
+
+        if has_error:
             image_url_str = (modal.image_url if (modal.image_url.value is not None) & (len(modal.image_url.value) > 0) else "-")
             repeat_annually_str = (f'Yes ✅' if repeat_annually   else 'No :x:')
 
-            validation_response = f"⚠️ Your submitted date `{modal.date}` was not valid. Please enter your event's date strictly in the format `dd/MM/yyyy`!\n"
             stored_values = (f"### ⚠️ Your changes were not saved to the database. However, so nothing gets lost I have your values right here for you:\n\n"
-            f"**Title:** {modal.event_title}\n**Description:** {modal.description}\n**Repeat annually:** {repeat_annually_str}\n**Image URL:** {image_url_str}")
+            f"**Title:** {modal.event_title}\n**Description:** {modal.description}\n**Date:** {modal.date}\n**Repeat annually:** {repeat_annually_str}\n**Image URL:** {image_url_str}")
                       
             await modal.on_submit_interaction.response.send_message(validation_response, ephemeral=True)
             await send_long_message(message=stored_values, interaction=interaction, already_responded=True)
@@ -109,7 +131,7 @@ async def edit_event(
             db_entry.image_url = modal.image_url.value
             db_entry.repeat_annually = repeat_annually
             db_entry.save()
-            await modal.on_submit_interaction.response.send_message(f"Successfully updated your event {modal.event_title}! ✨ \nThe ID of your event is: `{event_id}`, in case you want to preview or edit it later.", ephemeral=True)
+            await modal.on_submit_interaction.response.send_message(f"Successfully updated your event **{modal.event_title}**! ✨ \nThe ID of your event is: `{event_id}`, in case you want to preview or edit it later.", ephemeral=True)
           
     else:
         await interaction.response.send_message(content=f"We couldn't find an event of yours with the ID `{event_id}`. ☹️ \nCheck with the command `/my-events` the IDs of all your events.", ephemeral=True)
@@ -117,7 +139,7 @@ async def edit_event(
    
 
    
-@client.tree.command(name="my-events", description="Returns all events you ever added.")
+@client.tree.command(name="my events", description="Returns all events you ever added.")
 async def my_events(interaction: discord.Interaction):
     await interaction.response.defer(thinking=True, ephemeral=True)
     events_string = ""
@@ -137,12 +159,12 @@ async def my_events(interaction: discord.Interaction):
         f"**Date:** {date_formatter(db_entry.date)}\n**Repeated annually:** {repeat_annually_str}\n"
         f"**Image URL:**  {image_url_str}"
         f"\n\n --- \n\n")
-    send_long_message(events_string)
+    await send_long_message(message=events_string, interaction=interaction)
     
     
 
 
-@client.tree.command(name="preview-event", description="Preview one of your events.")
+@client.tree.command(name="preview event", description="Preview one of your events.")
 @app_commands.describe(
    event_id="ID of your event that you want to preview"
 )
@@ -163,7 +185,7 @@ async def preview_event(
         await interaction.edit_original_response(content=f"We couldn't find an event of yours with the ID `{event_id}`. ☹️ \nCheck with the command `/my-events` the IDs of all your events.")
 
 
-@client.tree.command(name="delete-event", description="Delete one of your events.")
+@client.tree.command(name="delete event", description="Delete one of your events.")
 @app_commands.describe(
     event_id="ID of your event that you want to delete."
 )

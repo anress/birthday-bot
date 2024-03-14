@@ -1,5 +1,6 @@
 import datetime
 import discord
+from typing import List
 from discord.ext import commands, tasks
 import random
 from ..models import Guild, Birthday, Event
@@ -14,7 +15,10 @@ bot = discord.Client(intents=intents)
 utc = datetime.timezone.utc
 
 # If no tzinfo is given then UTC is assumed.
-time = datetime.time(hour=8, minute=30, tzinfo=utc)
+time = datetime.time(hour=21, minute=59, tzinfo=utc)
+
+
+clean_up_time = datetime.time(hour=0, minute=0, tzinfo=utc)
 
 class Scheduler:
     def __init__(self, client):
@@ -24,7 +28,11 @@ class Scheduler:
     def cog_unload(self):
         self.my_task.cancel()
 
-    @tasks.loop(seconds=50)
+    ## do midnight clean up loop
+    @tasks.loop(time=time)
+    async def my_task(self):
+
+    @tasks.loop(time=time)
     async def my_task(self):
         today = datetime.datetime.now()
         print("My task is running!")
@@ -39,6 +47,15 @@ class Scheduler:
                     channel: discord.TextChannel = await guild.fetch_channel(db_entry_guild.channel_id)
                   
                     member = await guild.fetch_member(db_entry.user_id)
+                    roles: List[discord.Role] = await guild.fetch_roles()
+                    print(guild.roles)
+                    print(db_entry_guild.birthday_role_id)
+                    print(roles)
+                    role = next((x for x in roles if x.id == db_entry_guild.birthday_role_id), None)
+                    print(role)
+                    if role is not None:
+                        await member.add_roles(role)
+                    
                     embed: discord.Embed = discord.Embed(description=f"## ᨏᨐᨓ **Happy Birthday {member.display_name}!** ᨓᨐᨏ \n### ❀⊱┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄⊰❀\n\n"
                                                          f"{random.choice(BIRTHDAY_QUOTES)}\n\n" 
                                                          f"₊˚✧꒰ Everyone wish **<@{member.id}>** a happy birthday! ꒱₊˚✧\n", color=random.choice(EMBED_COLORS))

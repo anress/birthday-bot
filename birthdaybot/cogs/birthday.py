@@ -4,12 +4,32 @@ import datetime
 from discord import app_commands
 from ..models import Guild, Birthday
 from ..bot import client              
-from birthdaybot.helpers import send_long_message
+from birthdaybot.helpers import send_long_message, is_legitmate_date
 
 # admin command   
 # make the command only visible to admin (or restrict to certain roles): 
 # Server Settings > Integrations > Birthday Bot > /add-birthday-user > Add Roles or Members > @everyone > X
-@client.tree.command(name="add-birthday-user", description="Add a specific user's birthday")
+@client.tree.command(name="set birthday role", description="Create discord role for the birthday people.")
+@app_commands.describe(
+    name="Name of the role"
+)
+async def add_birthday_role(
+    interaction: discord.Interaction,
+    name: str
+):
+    if interaction.user.guild_permissions.administrator:
+        await interaction.response.defer(thinking=True, ephemeral=True)
+        guild = interaction.guild
+
+        role: discord.Role = await guild.create_role(name=name, hoist=True) 
+      
+        if (db_entry := Guild.get_or_none(Guild.guild_id == interaction.guild.id)) is not None:
+            db_entry: Guild
+            db_entry.birthday_role_id = role.id
+            db_entry.save()
+        await interaction.edit_original_response(content=f"Added new role for birthdays: <@&{role.id}>")
+   
+@client.tree.command(name="add birthday user", description="Add a specific user's birthday")
 @app_commands.describe(
     day="Day you were born on.",
     month="Month you were born in.",
@@ -26,7 +46,7 @@ async def add_birthday_user (
         await add_user_birthday_func(interaction, day, month, user)
 
 
-@client.tree.command(name="add-birthday", description="Add your birthday")
+@client.tree.command(name="add birthday", description="Add your birthday")
 @app_commands.describe(
     day="Day you were born on.",
     month="Month you were born in."
@@ -41,6 +61,7 @@ async def add_birthday(
     
 
 async def add_user_birthday_func(interaction: discord.Interaction, day:int, month:int, user: discord.User):
+  
     guild: Guild = Guild.get_or_none(Guild.guild_id == interaction.guild.id)
     if guild.channel_id is None:
         await interaction.edit_original_response(
@@ -48,6 +69,12 @@ async def add_user_birthday_func(interaction: discord.Interaction, day:int, mont
     )
         return
     
+    if not is_legitmate_date(day=day, month=month, year=0):
+        await interaction.edit_original_response(
+        content=f"The date {day}/{month} does not exist. Please enter a valid birthday!"
+    )  
+        return
+        
     if (db_entry := Birthday.get_or_none((Birthday.guild_id == interaction.guild.id) & (Birthday.user_id == user.id))) is not None:
         db_entry: Birthday
         await interaction.edit_original_response(
@@ -61,7 +88,7 @@ async def add_user_birthday_func(interaction: discord.Interaction, day:int, mont
         content=f"Your birthday was successfully added as **{user_birthday.date.strftime('%B')} {user_birthday.date.strftime('%d')}**! 🥳🎂"
     )
 
-@client.tree.command(name="remove-birthday", description="Remove your birthday from the list")
+@client.tree.command(name="remove birthday", description="Remove your birthday from the list")
 async def remove_birthday(interaction: discord.Interaction):
     await interaction.response.defer(thinking=True, ephemeral=True)
     if (db_entry := Birthday.get_or_none((Birthday.guild_id == interaction.guild.id) & (Birthday.user_id == interaction.user.id))) is not None:
@@ -76,7 +103,7 @@ async def remove_birthday(interaction: discord.Interaction):
         )
 
 # admin command
-@client.tree.command(name="remove-birthday-user", description="Remove your birthday from the list")
+@client.tree.command(name="remove birthday user", description="Remove your birthday from the list")
 @app_commands.describe(
     user="Who's birthday do you want to remove?"
 )
@@ -94,7 +121,7 @@ async def remove_birthday_user(interaction: discord.Interaction, user: discord.U
                 content=f"{user.display_name}'s birthday had not been tracked so far."
             )
 
-@client.tree.command(name="get-birthday", description="Returns the birthday you added (only you can see the response)")
+@client.tree.command(name="get birthday", description="Returns the birthday you added (only you can see the response)")
 async def get_birthday(interaction: discord.Interaction):
     await interaction.response.defer(thinking=True, ephemeral=True)
     if (db_entry := Birthday.get_or_none((Birthday.guild_id == interaction.guild.id) & (Birthday.user_id == interaction.user.id))) is not None:
@@ -107,7 +134,7 @@ async def get_birthday(interaction: discord.Interaction):
             content=f"Your birthday is not yet being tracked. Add it with the `/add-birthday` command. ✨")
 
 # admin command  
-@client.tree.command(name="get-birthdays", description="Returns all tracked birthdays for this server.")
+@client.tree.command(name="get birthdays", description="Returns all tracked birthdays for this server.")
 async def get_birthdays(interaction: discord.Interaction):
     await interaction.response.defer(thinking=True, ephemeral=True)
     birthday_string = ""
@@ -118,7 +145,7 @@ async def get_birthdays(interaction: discord.Interaction):
         await send_long_message(message=birthday_string, interaction=interaction)
 
 # admin command  
-@client.tree.command(name="upcoming-birthdays", description="Returns the three next upcoming birthdays.")
+@client.tree.command(name="upcoming birthdays", description="Returns the three next upcoming birthdays.")
 async def upcoming_birthdays(interaction: discord.Interaction):
     await interaction.response.defer(thinking=True, ephemeral=True)
     birthday_string = "The next upcoming birthdays are: \n\n"
