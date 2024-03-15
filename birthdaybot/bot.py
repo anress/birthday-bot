@@ -4,13 +4,14 @@ import logging
 from discord import app_commands
 from discord.ext.commands import has_permissions
 
-from .models import Guild
+from .models import Guild, Birthday, Event
 
 from .tasks.scheduler import Scheduler
 
 
 discord.utils.setup_logging()
 intents = discord.Intents.default()
+intents.members = True
 intents.message_content = True
 
 ADMIN_GUILDS = [
@@ -63,6 +64,9 @@ async def on_guild_remove(guild: discord.Guild):
      logging.info(f"Left / got removed from {guild}.")
      if (db_entry := Guild.get_or_none(Guild.guild_id == guild.id)) is not None:
         db_entry.delete_instance()
+        # and delete all events + birthdays from guild
+        Birthday.delete().where(Birthday.guild_id == guild.id).execute()
+        Event.delete().where(Event.guild_id == guild.id).execute()
 
 if ADMIN_GUILDS:
     @client.tree.command(
@@ -77,7 +81,7 @@ if ADMIN_GUILDS:
 
 @has_permissions(administrator=True)
 @client.tree.command(
-    name="set_channel",
+    name="set-channel",
     description="Set the default channel for the bot to post updates in.",
 )
 @app_commands.describe(

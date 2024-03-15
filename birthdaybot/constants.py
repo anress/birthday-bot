@@ -1,3 +1,8 @@
+import datetime
+
+utc = datetime.timezone.utc
+SCHEDULER_TIME = datetime.time(hour=9, minute=0, tzinfo=utc)
+
 # discord message max len - 6 characters for pre- and appending "..."
 MESSAGE_MAX_LEN = 1994
 

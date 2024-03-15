@@ -34,7 +34,7 @@ class EditEventModal(ui.Modal, title='Edit event'):
         self.stop()
 
 
-@client.tree.command(name="add event", description="Add a custom event")
+@client.tree.command(name="add-event", description="Add a custom event")
 @app_commands.describe(
     day="Day the event takes place.",
     month="Month the event takes place.",
@@ -84,7 +84,7 @@ async def add_event(
     await modal.on_submit_interaction.response.send_message(f"Successfully added your event! 💃 \nThe ID of your event is: `{event.id}`, in case you want to preview or edit it later.", ephemeral=True)
 
     
-@client.tree.command(name="edit event", description="Edit one of your events.")
+@client.tree.command(name="edit-event", description="Edit one of your events.")
 @app_commands.describe(
     event_id="ID of your event that you want to edit", 
     repeat_annually="Set whether this is a yearly reccurring event."
@@ -139,7 +139,7 @@ async def edit_event(
    
 
    
-@client.tree.command(name="my events", description="Returns all events you ever added.")
+@client.tree.command(name="my-events", description="Returns all events you ever added.")
 async def my_events(interaction: discord.Interaction):
     await interaction.response.defer(thinking=True, ephemeral=True)
     events_string = ""
@@ -164,7 +164,7 @@ async def my_events(interaction: discord.Interaction):
     
 
 
-@client.tree.command(name="preview event", description="Preview one of your events.")
+@client.tree.command(name="preview-event", description="Preview one of your events.")
 @app_commands.describe(
    event_id="ID of your event that you want to preview"
 )
@@ -185,7 +185,7 @@ async def preview_event(
         await interaction.edit_original_response(content=f"We couldn't find an event of yours with the ID `{event_id}`. ☹️ \nCheck with the command `/my-events` the IDs of all your events.")
 
 
-@client.tree.command(name="delete event", description="Delete one of your events.")
+@client.tree.command(name="delete-event", description="Delete one of your events.")
 @app_commands.describe(
     event_id="ID of your event that you want to delete."
 )

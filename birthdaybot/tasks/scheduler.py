@@ -1,41 +1,56 @@
 import datetime
 import discord
 from typing import List
-from discord.ext import commands, tasks
+from discord.ext import tasks
 import random
+import logging
 from ..models import Guild, Birthday, Event
-from birthdaybot.constants import BIRTHDAY_QUOTES, BIRTHDAY_IMAGES, EMBED_COLORS
+from birthdaybot.constants import SCHEDULER_TIME, BIRTHDAY_QUOTES, BIRTHDAY_IMAGES, EMBED_COLORS
 
 intents = discord.Intents.default()
 intents.message_content = True
 
 bot = discord.Client(intents=intents)
 
-
 utc = datetime.timezone.utc
 
 # If no tzinfo is given then UTC is assumed.
-time = datetime.time(hour=21, minute=59, tzinfo=utc)
-
-
-clean_up_time = datetime.time(hour=0, minute=0, tzinfo=utc)
+clean_up_time = datetime.time(hour=23, minute=59, tzinfo=utc)
 
 class Scheduler:
     def __init__(self, client):
         self.client = client
-        self.my_task.start()
+        self.check_birthdays_events.start()
+        self.clean_up.start()
 
     def cog_unload(self):
-        self.my_task.cancel()
+        self.check_birthdays_events.cancel()
+        self.clean_up.start()
 
     ## do midnight clean up loop
-    @tasks.loop(time=time)
-    async def my_task(self):
+    @tasks.loop(time=clean_up_time)
+    async def clean_up(self):
+        logging.info(f"Clean up")
+        client_guilds = [guild async for guild in self.client.fetch_guilds(limit=None)]
+        for guild in client_guilds:
+            guild: discord.Guild
+            if (db_entry_guild := Guild.get_or_none((Guild.guild_id == guild.id) & (Guild.birthday_role_id is not None))) is not None:
+                db_entry_guild: Guild
 
-    @tasks.loop(time=time)
-    async def my_task(self):
+                guild_members = [member async for member in guild.fetch_members(limit=None)]
+                for member in guild_members:
+                    member: discord.Member
+                    
+                    guild_roles: List[discord.Role] = await guild.fetch_roles()
+                    role = next((x for x in guild_roles if x.id == db_entry_guild.birthday_role_id), None)
+              
+                    if role is not None:
+                        await member.remove_roles(role)
+
+    @tasks.loop(time=SCHEDULER_TIME)
+    async def check_birthdays_events(self):
         today = datetime.datetime.now()
-        print("My task is running!")
+        logging.info(f"Checking for birthdays + events")
 
         for db_entry in Birthday.select().where((Birthday.date.day == today.day) & (Birthday.date.month == today.month)):
             db_entry: Birthday
@@ -47,12 +62,9 @@ class Scheduler:
                     channel: discord.TextChannel = await guild.fetch_channel(db_entry_guild.channel_id)
                   
                     member = await guild.fetch_member(db_entry.user_id)
-                    roles: List[discord.Role] = await guild.fetch_roles()
-                    print(guild.roles)
-                    print(db_entry_guild.birthday_role_id)
-                    print(roles)
-                    role = next((x for x in roles if x.id == db_entry_guild.birthday_role_id), None)
-                    print(role)
+                    guild_roles: List[discord.Role] = await guild.fetch_roles()
+                    role = next((x for x in guild_roles if x.id == db_entry_guild.birthday_role_id), None)
+              
                     if role is not None:
                         await member.add_roles(role)
                     
