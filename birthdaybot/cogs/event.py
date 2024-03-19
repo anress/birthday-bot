@@ -142,7 +142,7 @@ async def edit_event(
 @client.tree.command(name="my-events", description="Returns all events you ever added.")
 async def my_events(interaction: discord.Interaction):
     await interaction.response.defer(thinking=True, ephemeral=True)
-    events_string = ""
+    events_string = "Your events:\n\n"
     for db_entry in Event.select().where((Event.guild_id == interaction.guild.id) and (Event.user_id == interaction.user.id)).order_by(Event.date):
         db_entry: Event
         

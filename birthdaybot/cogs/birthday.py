@@ -1,6 +1,8 @@
 import discord
 import datetime         
 import random
+import logging
+import math
 
 from typing import List
 from discord import app_commands
@@ -149,7 +151,7 @@ async def get_birthday(interaction: discord.Interaction):
 @client.tree.command(name="get-birthdays", description="Returns all tracked birthdays for this server.")
 async def get_birthdays(interaction: discord.Interaction):
     await interaction.response.defer(thinking=True, ephemeral=True)
-    birthday_string = ""
+    birthday_string = "Birthdays: \n\n"
     if interaction.user.guild_permissions.administrator:
         for db_entry in Birthday.select().where(Birthday.guild_id == interaction.guild.id).order_by(Birthday.date):
             db_entry: Birthday
@@ -161,24 +163,24 @@ async def get_birthdays(interaction: discord.Interaction):
 async def upcoming_birthdays(interaction: discord.Interaction):
     await interaction.response.defer(thinking=True, ephemeral=True)
     birthday_string = "The next upcoming birthdays are: \n\n"
-    if interaction.user.guild_permissions.administrator:
-        today = datetime.datetime.now()
-        next_occurrence_list = []
-        for db_entry in Birthday.select().where((Birthday.guild_id == interaction.guild.id)).order_by(Birthday.date):
-            db_entry: Birthday
-           
-            temp = db_entry
-            temp.date = temp.date.replace(year=today.year)
-          
-            has_passed = temp.date < today.date()
-            if has_passed:
-                temp.date = temp.date.replace(year=(today.year + 1))
-            next_occurrence_list.append(temp)
+   
+    today = datetime.datetime.now()
+    next_occurrence_list = []
+    for db_entry in Birthday.select().where((Birthday.guild_id == interaction.guild.id)).order_by(Birthday.date):
+        db_entry: Birthday
+        
+        temp = db_entry
+        temp.date = temp.date.replace(year=today.year)
+        
+        has_passed = temp.date < today.date()
+        if has_passed:
+            temp.date = temp.date.replace(year=(today.year + 1))
+        next_occurrence_list.append(temp)
 
-        next_occurrence_list.sort(key=lambda element: element.date)
-        for index in range(3):
-            next = next_occurrence_list[index]
-            days_until = abs((next.date - today.date()).days)
-            birthday_string = birthday_string + f"- <@{next.user_id}> - {next.date.strftime('%A')}, {next.date.strftime('%B')} {next.date.strftime('%d')} {next.date.strftime('%Y')} 🎂 in **{days_until}** days.\n"
-        await interaction.edit_original_response(content=birthday_string, allowed_mentions=discord.AllowedMentions(users=False))
+    next_occurrence_list.sort(key=lambda element: element.date)
+    for index in range(min(3, len(next_occurrence_list))):
+        next = next_occurrence_list[index]
+        days_until = abs((next.date - today.date()).days)
+        birthday_string = birthday_string + f"- <@{next.user_id}> - {next.date.strftime('%A')}, {next.date.strftime('%B')} {next.date.strftime('%d')} {next.date.strftime('%Y')} 🎂 in **{days_until}** days.\n"
+    await interaction.edit_original_response(content=birthday_string, allowed_mentions=discord.AllowedMentions(users=False))
        
