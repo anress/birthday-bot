@@ -19,3 +19,11 @@ This server will be able to execute the `sync` command to synchronize the global
 2. Install dependencies: `poetry install`
 3. Start the bot: `python -m discordbottemplate`
 
+## Deployment
+
+- Linux: copy `birthdaybot.service` to `/etc/systemd/system`, then run `sudo systemctl daemon-reload`.
+- Enable bot on startup/reboot: `sudo systemctl enable birthdaybot`
+- Start/stop/restart bot: `sudo systemctl start/stop/restart birthdaybot`
+- Check current status: `sudo systemctl status birthdaybot`
+- Read full logs + live updates: `sudo journalctl -u birthdaybot -f`
+

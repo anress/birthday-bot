@@ -1,0 +1,12 @@
+[Unit]
+Description=Discord Birthday bot service.
+
+[Service]
+Type=simple
+User=anjaress
+WorkingDirectory=/home/anjaress/birthday-bot
+ExecStart=/home/anjaress/.cache/pypoetry/virtualenvs/birthdaybot-EQlZuQsk-py3.11/bin/python birthdaybot
+
+[Install]
+WantedBy=multi-user.target
+
