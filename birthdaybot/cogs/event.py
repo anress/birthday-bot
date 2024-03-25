@@ -48,6 +48,7 @@ async def add_event(
     year: int,
     repeat_annually: bool
 ):
+    logging.info(f"-- Add event --")
     guild: Guild = Guild.get_or_none(Guild.guild_id == interaction.guild.id)
     if guild.channel_id is None:
         await interaction.edit_original_response(
@@ -75,6 +76,8 @@ async def add_event(
         stored_values = (f"### ⚠️ Your changes were not saved to the database. However, so nothing gets lost I have your values right here for you:\n\n"
         f"**Title:** {modal.event_title}\n**Description:** {modal.description}\n**Date:** {date_formatter(datetime.date(month=month, day=day, year=year))}\n**Repeat annually:** {repeat_annually_str}\n**Image URL:** {image_url_str}")
                     
+        
+        logging.info(f"Add event from user {interaction.user.display_name} - '{modal.event_title}' ")
         await modal.on_submit_interaction.response.send_message(validation_response, ephemeral=True)
         await send_long_message(message=stored_values, interaction=interaction, already_responded=True)
     else:
@@ -94,6 +97,7 @@ async def edit_event(
     event_id: int,
     repeat_annually: bool
 ):
+    logging.info(f"-- Edit event --")
     if (db_entry := Event.get_or_none((Event.guild_id == interaction.guild.id) & (Event.user_id == interaction.user.id) & (Event.id == event_id))) is not None:
         db_entry: Event
 
@@ -131,6 +135,8 @@ async def edit_event(
             db_entry.image_url = modal.image_url.value
             db_entry.repeat_annually = repeat_annually
             db_entry.save()
+            
+            logging.info(f"Edit event user {interaction.user.display_name} - '{modal.event_title.value}' ")
             await modal.on_submit_interaction.response.send_message(f"Successfully updated your event **{modal.event_title}**! ✨ \nThe ID of your event is: `{event_id}`, in case you want to preview or edit it later.", ephemeral=True)
           
     else:
@@ -141,6 +147,7 @@ async def edit_event(
    
 @client.tree.command(name="my-events", description="Returns all events you ever added.")
 async def my_events(interaction: discord.Interaction):
+    logging.info(f"-- List my event --")
     await interaction.response.defer(thinking=True, ephemeral=True)
     events_string = "Your events:\n\n"
     for db_entry in Event.select().where((Event.guild_id == interaction.guild.id) and (Event.user_id == interaction.user.id)).order_by(Event.date):
@@ -159,6 +166,8 @@ async def my_events(interaction: discord.Interaction):
         f"**Date:** {date_formatter(db_entry.date)}\n**Repeated annually:** {repeat_annually_str}\n"
         f"**Image URL:**  {image_url_str}"
         f"\n\n --- \n\n")
+    
+    logging.info(f"List events user {interaction.user.display_name}")
     await send_long_message(message=events_string, interaction=interaction)
     
     
@@ -172,6 +181,7 @@ async def preview_event(
     interaction: discord.Interaction,
     event_id: int
     ):
+    logging.info(f"-- Preview event --")
     await interaction.response.defer(thinking=True, ephemeral=True)
   
     if (db_entry := Event.get_or_none((Event.guild_id == interaction.guild.id) & (Event.user_id == interaction.user.id) & (Event.id == event_id))) is not None:
@@ -180,6 +190,8 @@ async def preview_event(
         if db_entry.image_url is not None:
             embed.set_image(url=db_entry.image_url)
         embed.set_footer(text="Powered by anjress", icon_url="https://anja.codes/logo192.png")
+        
+        logging.info(f"Preview events user {interaction.user.display_name} - event ID {db_entry.id}")
         await interaction.edit_original_response(embed=embed)
     else:
         await interaction.edit_original_response(content=f"We couldn't find an event of yours with the ID `{event_id}`. ☹️ \nCheck with the command `/my-events` the IDs of all your events.")
@@ -189,12 +201,15 @@ async def preview_event(
 @app_commands.describe(
     event_id="ID of your event that you want to delete."
 )
-async def remove_birthday_user(interaction: discord.Interaction, event_id: int):
+async def delete_event(interaction: discord.Interaction, event_id: int):
+    logging.info(f"-- Delete event --")
     await interaction.response.defer(thinking=True, ephemeral=True)
 
     if (db_entry := Event.get_or_none((Event.guild_id == interaction.guild.id) & (Event.user_id == interaction.user.id) & (Event.id == event_id))) is not None:
         db_entry: Event
         event_title = db_entry.title
+        
+        logging.info(f"Delete events user {interaction.user.display_name} - event ID {db_entry.id}")
         db_entry.delete_instance()
         await interaction.edit_original_response(
             content=f"The event {event_title} with the ID {event_id} has been deleted. 💥"

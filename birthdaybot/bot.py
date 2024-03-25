@@ -24,9 +24,9 @@ class BirthdayBotClient(discord.Client):
         super().__init__(intents=intents)
         self.tree = discord.app_commands.CommandTree(self)
 
-    async def on_disconnect(self):
-        for task in self.task_containers:
-            task.cog_unload()
+    # async def on_disconnect(self):
+        # for task in self.task_containers:
+          #  task.cog_unload()
 
     async def setup_hook(self):
         logging.info(f"Logged in as {self.user.name}")

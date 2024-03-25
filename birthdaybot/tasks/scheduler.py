@@ -19,18 +19,27 @@ clean_up_time = datetime.time(hour=23, minute=59, tzinfo=utc)
 
 class Scheduler:
     def __init__(self, client):
+        logging.info(f"Loading scheduled tasks.")
         self.client = client
         self.check_birthdays_events.start()
+        self.check_periodically.start()
         self.clean_up.start()
 
     def cog_unload(self):
+        logging.info(f"Unloading scheduled tasks")
         self.check_birthdays_events.cancel()
-        self.clean_up.start()
+        self.check_periodically.cancel()
+        self.clean_up.cancel()
+
+    ## do midnight clean up loop
+    @tasks.loop(minutes=30)
+    async def check_periodically(self):
+        logging.info(f"Birthday bot is still up and running!")
 
     ## do midnight clean up loop
     @tasks.loop(time=clean_up_time)
     async def clean_up(self):
-        logging.info(f"Clean up")
+        logging.info(f"Starting clean up")
         client_guilds = [guild async for guild in self.client.fetch_guilds(limit=None)]
         for guild in client_guilds:
             guild: discord.Guild
@@ -47,10 +56,12 @@ class Scheduler:
                     if role is not None:
                         await member.remove_roles(role)
 
+        logging.info(f"Clean up completed.")
+
     @tasks.loop(time=SCHEDULER_TIME)
-    async def check_birthdays_events(self):
-        today = datetime.datetime.now()
+    async def check_birthdays_events(self):        
         logging.info(f"Checking for birthdays + events")
+        today = datetime.datetime.now()
 
         for db_entry in Birthday.select().where((Birthday.date.day == today.day) & (Birthday.date.month == today.month)):
             db_entry: Birthday
@@ -62,6 +73,10 @@ class Scheduler:
                     channel: discord.TextChannel = await guild.fetch_channel(db_entry_guild.channel_id)
                   
                     member = await guild.fetch_member(db_entry.user_id)
+
+                    
+                    logging.info(f"Today's birthday: {member.display_name} on guild {guild.name}")
+
                     guild_roles: List[discord.Role] = await guild.fetch_roles()
                     role = next((x for x in guild_roles if x.id == db_entry_guild.birthday_role_id), None)
               
@@ -84,8 +99,13 @@ class Scheduler:
                     guild: discord.Guild = await self.client.fetch_guild(db_entry_guild.guild_id)
                     channel: discord.TextChannel = await guild.fetch_channel(db_entry_guild.channel_id)
                   
+                  
+                    logging.info(f"Today's event: {db_entry.title} on guild {guild.name}")
+
                     embed: discord.Embed = discord.Embed(title=db_entry.title, description=db_entry.description, color=random.choice(EMBED_COLORS))
                     if db_entry.image_url is not None:
                         embed.set_image(url=db_entry.image_url)
                     embed.set_footer(text="Powered by anjress", icon_url="https://anja.codes/logo192.png")
                     await channel.send(embed=embed)
+        
+        logging.info(f"Finished checking for birthdays + events")

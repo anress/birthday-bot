@@ -22,6 +22,8 @@ async def add_birthday_role(
     interaction: discord.Interaction,
     name: str
 ):
+
+    logging.info(f"-- Add birthday role --")
     if interaction.user.guild_permissions.administrator:
         await interaction.response.defer(thinking=True, ephemeral=True)
         guild = interaction.guild
@@ -55,6 +57,7 @@ async def add_birthday_user (
     month: app_commands.Range[int, 1, 12],
     user: discord.User
 ):
+    logging.info(f"-- Add birthday user --")
     await interaction.response.defer(thinking=True, ephemeral=True)
     if interaction.user.guild_permissions.administrator:
         await add_user_birthday_func(interaction, day, month, user)
@@ -70,6 +73,8 @@ async def add_birthday(
     day: app_commands.Range[int, 1, 31],
     month: app_commands.Range[int, 1, 12]
 ):
+    
+    logging.info(f"-- Add birthday --")
     await interaction.response.defer(thinking=True, ephemeral=True)
     await add_user_birthday_func(interaction, day, month, interaction.user)
     
@@ -96,6 +101,8 @@ async def add_user_birthday_func(interaction: discord.Interaction, day:int, mont
     )
         return
 
+    
+    logging.info(f"Added birthday user {user_id} + **{db_entry.date.strftime('%B')} {db_entry.date.strftime('%d')}**")
     user_birthday = Birthday.create(guild_id=interaction.guild.id, user_id=user.id, date=datetime.date(month=month, day=day, year=1970))
     
     await interaction.edit_original_response(
@@ -104,10 +111,14 @@ async def add_user_birthday_func(interaction: discord.Interaction, day:int, mont
 
 @client.tree.command(name="remove-birthday", description="Remove your birthday from the list")
 async def remove_birthday(interaction: discord.Interaction):
+    
+    logging.info(f"-- Remove birthday --")
     await interaction.response.defer(thinking=True, ephemeral=True)
     if (db_entry := Birthday.get_or_none((Birthday.guild_id == interaction.guild.id) & (Birthday.user_id == interaction.user.id))) is not None:
         db_entry: Birthday
         db_entry.delete_instance()
+    
+        logging.info(f"Delete birthday from user {interaction.user.display_name}")
         await interaction.edit_original_response(
             content=f"Your birthday has been removed from the list. 💥"
         )
@@ -122,11 +133,15 @@ async def remove_birthday(interaction: discord.Interaction):
     user="Who's birthday do you want to remove?"
 )
 async def remove_birthday_user(interaction: discord.Interaction, user: discord.User):
+    
+    logging.info(f"-- Remove birthday user --")
     await interaction.response.defer(thinking=True, ephemeral=True)
     if interaction.user.guild_permissions.administrator:
         if (db_entry := Birthday.get_or_none((Birthday.guild_id == interaction.guild.id) & (Birthday.user_id == user.id))) is not None:
             db_entry: Birthday
             db_entry.delete_instance()
+            
+            logging.info(f"Admin delete birthday from user {db_entry.user_id}")
             await interaction.edit_original_response(
                 content=f"{user.display_name}'s birthday has been removed from the list. 💥"
             )
@@ -137,9 +152,13 @@ async def remove_birthday_user(interaction: discord.Interaction, user: discord.U
 
 @client.tree.command(name="get-birthday", description="Returns the birthday you added (only you can see the response)")
 async def get_birthday(interaction: discord.Interaction):
+    
+    logging.info(f"-- Get birthday --")
     await interaction.response.defer(thinking=True, ephemeral=True)
     if (db_entry := Birthday.get_or_none((Birthday.guild_id == interaction.guild.id) & (Birthday.user_id == interaction.user.id))) is not None:
         db_entry: Birthday
+        
+        logging.info(f"Got birthday {interaction.user.display_name} - **{db_entry.date.strftime('%B')} {db_entry.date.strftime('%d')}**")
         await interaction.edit_original_response(
             content=f"Your birthday is set as **{db_entry.date.strftime('%B')} {db_entry.date.strftime('%d')}**! 🎈🍰"
             f"\n \n I hope that is correct? 🤔 \n To change it, please delete the current entry with `/remove-birthday` and add it again with `/add-birthday`.")
@@ -150,6 +169,8 @@ async def get_birthday(interaction: discord.Interaction):
 # admin command  
 @client.tree.command(name="get-birthdays", description="Returns all tracked birthdays for this server.")
 async def get_birthdays(interaction: discord.Interaction):
+    
+    logging.info(f"-- Get birthdays --")
     await interaction.response.defer(thinking=True, ephemeral=True)
     birthday_string = "Birthdays: \n\n"
     if interaction.user.guild_permissions.administrator:
@@ -161,6 +182,7 @@ async def get_birthdays(interaction: discord.Interaction):
 # admin command  
 @client.tree.command(name="upcoming-birthdays", description="Returns the three next upcoming birthdays.")
 async def upcoming_birthdays(interaction: discord.Interaction):
+    logging.info(f"-- Upcoming birthdays --")
     await interaction.response.defer(thinking=True, ephemeral=True)
     birthday_string = "The next upcoming birthdays are: \n\n"
    
