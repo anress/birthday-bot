@@ -14,7 +14,7 @@ from birthdaybot.helpers import date_formatter, is_valid_date, is_valid_url, sen
 class AddEventModal(ui.Modal, title='Create new event'):
     event_title = ui.TextInput(label='Event title')
     description = ui.TextInput(label='Description of your event', style=discord.TextStyle.paragraph, placeholder="Supports default emojis and standard discord markdown")
-    image_url = ui.TextInput(label='Add an image (optional)', required=False)
+    image_url = ui.TextInput(label='Add an image URL (optional)', required=False, placeholder="Enter a URL of an image")
     async def on_submit(self, interaction: discord.Interaction):
         self.on_submit_interaction = interaction
         self.stop()
@@ -23,7 +23,7 @@ class EditEventModal(ui.Modal, title='Edit event'):
     event_title = ui.TextInput(label='Event title')
     description = ui.TextInput(label='Description of your event', style=discord.TextStyle.paragraph, placeholder="Supports default emojis and standard discord markdown")
     date= ui.TextInput(label='Date (Strictly in the formtat dd/MM/yyyy)', placeholder="dd/MM/yyyy")
-    image_url = ui.TextInput(label='Add an image (optional)', required=False)  
+    image_url = ui.TextInput(label='Add an image URL (optional)', required=False, placeholder="Enter a URL of an image")  
     def __init__(self, original_event: Event):
             super().__init__()
             self.event_title.default = original_event.title
